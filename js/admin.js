@@ -167,6 +167,13 @@ function renderJobs() {
     viewBtn.addEventListener("click", () => viewFile(job.id, viewBtn));
     actions.appendChild(viewBtn);
 
+    const downloadBtn = document.createElement("button");
+    downloadBtn.type = "button";
+    downloadBtn.className = "btn-download";
+    downloadBtn.textContent = "Download";
+    downloadBtn.addEventListener("click", () => downloadFile(job.id, job.file_name, downloadBtn));
+    actions.appendChild(downloadBtn);
+
     if (job.job_status === "queued") {
       const btn = document.createElement("button");
       btn.type = "button";
@@ -238,6 +245,34 @@ async function viewFile(jobId, btn) {
     log(`Error: ${err.message}`);
   } finally {
     btn.disabled = false;
+  }
+}
+
+async function downloadFile(jobId, fileName, btn) {
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = "Downloading...";
+  try {
+    const data = await callAdmin("getFileUrl", { job_id: jobId });
+    // Fetch the signed URL as a blob so we can force a save-as-file with the
+    // correct filename, instead of relying on the browser's own inline
+    // viewer (which varies by file type and by browser).
+    const fileRes = await fetch(data.url);
+    if (!fileRes.ok) throw new Error("Could not download the file");
+    const blob = await fileRes.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = fileName || "file";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(blobUrl);
+  } catch (err) {
+    log(`Error: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
   }
 }
 

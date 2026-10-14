@@ -133,6 +133,14 @@
   background-color: #1e7e34;
 }
 
+.job-actions .btn-download {
+  background-color: #17a2b8;
+}
+
+.job-actions .btn-download:hover:not(:disabled) {
+  background-color: #117a8b;
+}
+
 .job-actions .btn-advance {
   background-color: #007bff;
 }
