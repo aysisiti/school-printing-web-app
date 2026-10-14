@@ -175,12 +175,26 @@ function renderJobs() {
       btn.addEventListener("click", () => updateStatus(job.id, "printing", btn));
       actions.appendChild(btn);
     } else if (job.job_status === "printing") {
+      const undoBtn = document.createElement("button");
+      undoBtn.type = "button";
+      undoBtn.className = "btn-undo";
+      undoBtn.textContent = "Undo (back to queued)";
+      undoBtn.addEventListener("click", () => updateStatus(job.id, "queued", undoBtn));
+      actions.appendChild(undoBtn);
+
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "btn-done";
       btn.textContent = "Mark done";
       btn.addEventListener("click", () => updateStatus(job.id, "done", btn));
       actions.appendChild(btn);
+    } else if (job.job_status === "done") {
+      const undoBtn = document.createElement("button");
+      undoBtn.type = "button";
+      undoBtn.className = "btn-undo";
+      undoBtn.textContent = "Undo (back to printing)";
+      undoBtn.addEventListener("click", () => updateStatus(job.id, "printing", undoBtn));
+      actions.appendChild(undoBtn);
     }
 
     card.appendChild(top);

@@ -145,6 +145,15 @@
   background-color: #452189;
 }
 
+.job-actions .btn-undo {
+  background-color: #e9eef5;
+  color: #555;
+}
+
+.job-actions .btn-undo:hover:not(:disabled) {
+  background-color: #dbe4f0;
+}
+
 @media (max-width: 480px) {
   .job-card-top {
     flex-direction: column;
