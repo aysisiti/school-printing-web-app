@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import QRCode from "https://esm.sh/qrcode@1.5.3";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, API_BASE, STORAGE_BUCKET } from "./config.js";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -55,6 +56,15 @@ const statusResult = document.getElementById("statusResult");
 
 const debugOutput = document.getElementById("debugOutput");
 const returnBanner = document.getElementById("returnBanner");
+
+const qrOverlay = document.getElementById("qrOverlay");
+const qrOrderCode = document.getElementById("qrOrderCode");
+const qrAmount = document.getElementById("qrAmount");
+const qrCanvas = document.getElementById("qrCanvas");
+const qrWaiting = document.getElementById("qrWaiting");
+const qrCloseBtn = document.getElementById("qrCloseBtn");
+
+let pollTimer = null;
 
 function log(msg) {
   debugOutput.textContent += (debugOutput.textContent ? "\n" : "") + msg;
@@ -299,18 +309,94 @@ checkoutBtn.addEventListener("click", async () => {
     if (!res.ok) {
       throw new Error(data.error || "Failed to create checkout.");
     }
-    if (!data.checkout_url) {
-      throw new Error("No checkout URL returned.");
+    if (!data.qr_string) {
+      throw new Error("No QR code returned.");
     }
 
-    setCheckoutStatus(`Order ${data.order_code} created. Redirecting to payment...`, "ok");
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    window.location.href = data.checkout_url;
+    setCheckoutStatus(`Order ${data.order_code} created.`, "ok");
+    await showPaymentQr(data.order_code, data.total_amount, data.qr_string);
   } catch (err) {
     setCheckoutStatus(err.message || "Something went wrong.", "err");
+  } finally {
     checkoutBtn.disabled = false;
   }
 });
+
+// ---------------------------------------------------------------
+// QR payment modal: render the Xendit QR Ph string as a scannable
+// QR code, then poll getOrderStatus every few seconds until the
+// webhook flips payment_stat away from "pending".
+// ---------------------------------------------------------------
+async function showPaymentQr(orderCode, totalAmount, qrString) {
+  qrOrderCode.textContent = orderCode;
+  qrAmount.textContent = `Amount: ₱${Number(totalAmount).toFixed(2)}`;
+  qrWaiting.textContent = "Waiting for payment confirmation…";
+  qrWaiting.className = "status-msg";
+  qrOverlay.classList.remove("hidden");
+
+  try {
+    await QRCode.toCanvas(qrCanvas, qrString, { width: 220, margin: 1 });
+  } catch (err) {
+    log(`QR render error: ${err.message}`);
+  }
+
+  stopPolling();
+  pollTimer = setInterval(() => pollPaymentStatus(orderCode), 3000);
+  pollPaymentStatus(orderCode); // check immediately too
+}
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
+async function pollPaymentStatus(orderCode) {
+  try {
+    const res = await fetch(`${API_BASE}/getOrderStatus`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: "Bearer " + SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ order_code: orderCode }),
+    });
+    const data = await res.json();
+    if (!res.ok) return;
+
+    if (data.payment_stat === "confirmed") {
+      stopPolling();
+      qrWaiting.textContent = "Payment confirmed! Closing in a moment…";
+      qrWaiting.className = "status-msg ok";
+      setTimeout(() => {
+        qrOverlay.classList.add("hidden");
+        statusPrintId.value = orderCode;
+        checkOrderStatus(orderCode);
+        resetCartAfterOrder();
+      }, 1500);
+    } else if (data.payment_stat === "failed") {
+      stopPolling();
+      qrWaiting.textContent = "Payment failed. You can close this and try again.";
+      qrWaiting.className = "status-msg err";
+    }
+    // "pending" — keep polling silently
+  } catch (err) {
+    log(`Status poll error: ${err.message}`);
+  }
+}
+
+qrCloseBtn.addEventListener("click", () => {
+  stopPolling();
+  qrOverlay.classList.add("hidden");
+});
+
+function resetCartAfterOrder() {
+  cart = [];
+  renderCart();
+  setCheckoutStatus("", "");
+}
 
 function setCheckoutStatus(msg, kind) {
   checkoutStatus.textContent = msg;
