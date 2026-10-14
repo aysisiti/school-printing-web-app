@@ -192,6 +192,14 @@
   z-index: 1000;
 }
 
+/* Must win over .preview-overlay's own display:flex (same specificity, but
+   .preview-overlay is declared later in the cascade than .hidden in
+   styles.css, so without this more-specific override the modal could never
+   be hidden). */
+.preview-overlay.hidden {
+  display: none;
+}
+
 .preview-box {
   background: white;
   border-radius: 12px;
