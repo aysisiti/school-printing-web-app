@@ -157,6 +157,35 @@ button:disabled {
 .status-msg.ok { color: #1a8a53; }
 .status-msg.err { color: #c13a2f; }
 
+/* ========== Return banner ========== */
+#returnBanner {
+  width: 100%;
+  max-width: 460px;
+  padding: 1rem 1.2rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+#returnBanner.success {
+  background: #d4edda;
+  color: #1a4f2e;
+  border: 1px solid #b4dfc1;
+}
+
+#returnBanner.failure {
+  background: #f8d7da;
+  color: #7a2a23;
+  border: 1px solid #f0bcc1;
+}
+
+#returnBanner strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 0.98rem;
+}
+
 /* ========== Cart ========== */
 .cart-list {
   list-style: none;

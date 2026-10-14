@@ -54,6 +54,7 @@ const statusPrintId = document.getElementById("statusPrintId");
 const statusResult = document.getElementById("statusResult");
 
 const debugOutput = document.getElementById("debugOutput");
+const returnBanner = document.getElementById("returnBanner");
 
 function log(msg) {
   debugOutput.textContent += (debugOutput.textContent ? "\n" : "") + msg;
@@ -303,6 +304,7 @@ checkoutBtn.addEventListener("click", async () => {
     }
 
     setCheckoutStatus(`Order ${data.order_code} created. Redirecting to payment...`, "ok");
+    await new Promise((resolve) => setTimeout(resolve, 1200));
     window.location.href = data.checkout_url;
   } catch (err) {
     setCheckoutStatus(err.message || "Something went wrong.", "err");
@@ -318,8 +320,9 @@ function setCheckoutStatus(msg, kind) {
 // ---------------------------------------------------------------
 // Status checker — calls the getOrderStatus Edge Function
 // ---------------------------------------------------------------
-checkStatusBtn.addEventListener("click", async () => {
-  const pid = statusPrintId.value.trim();
+checkStatusBtn.addEventListener("click", () => checkOrderStatus(statusPrintId.value.trim()));
+
+async function checkOrderStatus(pid) {
   if (!pid) {
     statusResult.innerHTML = `<p class="status-msg err">Enter a Print ID.</p>`;
     return;
@@ -377,6 +380,35 @@ checkStatusBtn.addEventListener("click", async () => {
   } catch (err) {
     statusResult.innerHTML = `<p class="status-msg err">${escapeHtml(err.message || "Something went wrong.")}</p>`;
   }
-});
+}
+
+// ---------------------------------------------------------------
+// Handle coming back from the Xendit checkout page. createCheckout
+// sets the redirect to "?order=ORD-xxxx&status=success|failed", so
+// pick that up here and show the order instead of leaving the
+// student stranded with no confirmation of what happened.
+// ---------------------------------------------------------------
+function handleReturnFromPayment() {
+  const params = new URLSearchParams(window.location.search);
+  const orderCode = params.get("order");
+  const status = params.get("status");
+  if (!orderCode) return;
+
+  statusPrintId.value = orderCode;
+
+  returnBanner.classList.remove("hidden", "success", "failure");
+  if (status === "success") {
+    returnBanner.classList.add("success");
+    returnBanner.innerHTML = `<strong>Payment received — Print ID: ${escapeHtml(orderCode)}</strong>Keep this ID to check your print status any time. Checking its status now — if it still shows "pending" for a moment, click "Check Status" again in a few seconds.`;
+    checkOrderStatus(orderCode);
+  } else {
+    returnBanner.classList.add("failure");
+    returnBanner.innerHTML = `<strong>Payment not completed — Print ID: ${escapeHtml(orderCode)}</strong>Your cart items were saved under this order, but payment didn't go through. You can check its status below, or place a new order.`;
+  }
+
+  // Clean the URL so refreshing the page doesn't re-show this banner
+  window.history.replaceState({}, document.title, window.location.pathname);
+}
 
 renderCart();
+handleReturnFromPayment();
