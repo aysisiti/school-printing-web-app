@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PrintQ2 — Staff Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <header>
+    <h1>PrintQ2 Staff Dashboard</h1>
+    <p>Print queue management</p>
+  </header>
+
+  <main id="adminMain">
+    <!-- ===================== Lock screen ===================== -->
+    <section id="lock-section" class="form-section">
+      <h2>Staff Login</h2>
+      <label>Admin key:</label>
+      <input type="password" id="adminKeyInput" placeholder="Enter admin key" required />
+      <button type="button" id="unlockBtn">Unlock</button>
+      <p id="lockStatus" class="status-msg"></p>
+    </section>
+
+    <!-- ===================== Dashboard ===================== -->
+    <section id="dashboard-section" class="form-section wide hidden">
+      <div class="dash-head">
+        <h2>Print Queue</h2>
+        <div class="dash-head-actions">
+          <button type="button" id="refreshBtn" class="btn-small">Refresh</button>
+          <button type="button" id="lockOutBtn" class="btn-small btn-muted">Lock</button>
+        </div>
+      </div>
+
+      <div class="filter-row" id="filterRow">
+        <button type="button" class="filter-btn active" data-filter="active">Queued + Printing</button>
+        <button type="button" class="filter-btn" data-filter="queued">Queued</button>
+        <button type="button" class="filter-btn" data-filter="printing">Printing</button>
+        <button type="button" class="filter-btn" data-filter="done">Done</button>
+        <button type="button" class="filter-btn" data-filter="all">All</button>
+      </div>
+
+      <p id="jobsEmptyMsg" class="muted hidden">No print jobs in this view.</p>
+      <div id="jobsList" class="jobs-list"></div>
+    </section>
+
+    <p id="adminDebug" class="muted"></p>
+  </main>
+
+  <footer>
+    <p>© 2026 PrintQ — Staff Dashboard</p>
+  </footer>
+
+  <script type="module" src="js/config.js"></script>
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

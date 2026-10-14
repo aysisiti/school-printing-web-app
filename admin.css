@@ -1,0 +1,152 @@
+/* ========== Admin dashboard extras ========== */
+.form-section.wide {
+  max-width: 780px;
+}
+
+.dash-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.dash-head h2 {
+  margin: 0;
+}
+
+.dash-head-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-small {
+  display: inline-block;
+  width: auto;
+  padding: 0.45rem 0.9rem;
+  margin-top: 0;
+  font-size: 0.85rem;
+}
+
+.btn-muted {
+  background-color: #6c7a89;
+}
+
+.btn-muted:hover:not(:disabled) {
+  background-color: #52606c;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.filter-btn {
+  width: auto;
+  padding: 0.4rem 0.8rem;
+  margin-top: 0;
+  font-size: 0.82rem;
+  background-color: #e9eef5;
+  color: #333;
+}
+
+.filter-btn:hover:not(:disabled) {
+  background-color: #dbe4f0;
+}
+
+.filter-btn.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.job-card {
+  border: 1px solid #e3e8f0;
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.job-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.job-queue-pos {
+  font-weight: 700;
+  color: #007bff;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.job-student {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.job-order-code {
+  font-size: 0.78rem;
+  color: #888;
+}
+
+.job-specs {
+  font-size: 0.85rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.job-fulfill {
+  font-size: 0.82rem;
+  color: #555;
+}
+
+.job-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.job-actions button {
+  width: auto;
+  margin-top: 0;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+.job-actions .btn-view {
+  background-color: #28a745;
+}
+
+.job-actions .btn-view:hover:not(:disabled) {
+  background-color: #1e7e34;
+}
+
+.job-actions .btn-advance {
+  background-color: #007bff;
+}
+
+.job-actions .btn-done {
+  background-color: #5a2db0;
+}
+
+.job-actions .btn-done:hover:not(:disabled) {
+  background-color: #452189;
+}
+
+@media (max-width: 480px) {
+  .job-card-top {
+    flex-direction: column;
+  }
+}
