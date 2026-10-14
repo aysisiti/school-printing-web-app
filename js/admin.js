@@ -11,11 +11,19 @@ const filterRow = document.getElementById("filterRow");
 const jobsList = document.getElementById("jobsList");
 const jobsEmptyMsg = document.getElementById("jobsEmptyMsg");
 const adminDebug = document.getElementById("adminDebug");
+const previewOverlay = document.getElementById("previewOverlay");
+const previewFileName = document.getElementById("previewFileName");
+const previewBody = document.getElementById("previewBody");
+const previewDownloadBtn = document.getElementById("previewDownloadBtn");
+const previewCloseBtn = document.getElementById("previewCloseBtn");
 
 const SESSION_KEY = "printq_admin_key";
+const IMAGE_EXT = ["jpg", "jpeg", "png", "gif", "webp"];
 let currentFilter = "active";
 let allJobs = [];
 let autoRefreshTimer = null;
+let previewJobId = null;
+let previewFileLabel = "";
 
 function log(msg) {
   adminDebug.textContent = msg;
@@ -164,7 +172,7 @@ function renderJobs() {
     viewBtn.type = "button";
     viewBtn.className = "btn-view";
     viewBtn.textContent = "View file";
-    viewBtn.addEventListener("click", () => viewFile(job.id, viewBtn));
+    viewBtn.addEventListener("click", () => openPreview(job.id, job.file_name, viewBtn));
     actions.appendChild(viewBtn);
 
     const downloadBtn = document.createElement("button");
@@ -236,16 +244,27 @@ async function loadJobs() {
   }
 }
 
-async function viewFile(jobId, btn) {
-  btn.disabled = true;
-  try {
-    const data = await callAdmin("getFileUrl", { job_id: jobId });
-    window.open(data.url, "_blank", "noopener");
-  } catch (err) {
-    log(`Error: ${err.message}`);
-  } finally {
-    btn.disabled = false;
-  }
+function fileExt(fileName) {
+  const dot = (fileName || "").lastIndexOf(".");
+  return dot === -1 ? "" : fileName.slice(dot + 1).toLowerCase();
+}
+
+// Shared by the modal's Download button and the quick Download button on
+// each card: fetches the signed URL as a blob so we can force a save-as-file
+// with the correct filename, instead of relying on the browser's own inline
+// viewer (which varies by file type and by browser).
+async function downloadBlob(url, fileName) {
+  const fileRes = await fetch(url);
+  if (!fileRes.ok) throw new Error("Could not download the file");
+  const blob = await fileRes.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = fileName || "file";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(blobUrl);
 }
 
 async function downloadFile(jobId, fileName, btn) {
@@ -254,26 +273,62 @@ async function downloadFile(jobId, fileName, btn) {
   btn.textContent = "Downloading...";
   try {
     const data = await callAdmin("getFileUrl", { job_id: jobId });
-    // Fetch the signed URL as a blob so we can force a save-as-file with the
-    // correct filename, instead of relying on the browser's own inline
-    // viewer (which varies by file type and by browser).
-    const fileRes = await fetch(data.url);
-    if (!fileRes.ok) throw new Error("Could not download the file");
-    const blob = await fileRes.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = fileName || "file";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(blobUrl);
+    await downloadBlob(data.url, fileName);
   } catch (err) {
     log(`Error: ${err.message}`);
   } finally {
     btn.disabled = false;
     btn.textContent = originalText;
   }
+}
+
+// Opens the in-dashboard preview panel first (like Google Drive's file
+// preview page) — download only happens as a deliberate second step from
+// inside it, never as the first click.
+async function openPreview(jobId, fileName, btn) {
+  previewJobId = jobId;
+  previewFileLabel = fileName || "file";
+  previewFileName.textContent = previewFileLabel;
+  previewBody.innerHTML = `<p class="preview-unavailable">Loading preview…</p>`;
+  previewOverlay.classList.remove("hidden");
+
+  btn.disabled = true;
+  try {
+    const data = await callAdmin("getFileUrl", { job_id: jobId });
+    const ext = fileExt(fileName);
+
+    if (IMAGE_EXT.includes(ext)) {
+      previewBody.innerHTML = "";
+      const img = document.createElement("img");
+      img.src = data.url;
+      img.alt = fileName;
+      previewBody.appendChild(img);
+    } else if (ext === "pdf") {
+      previewBody.innerHTML = "";
+      const iframe = document.createElement("iframe");
+      iframe.src = data.url;
+      iframe.title = fileName;
+      previewBody.appendChild(iframe);
+    } else {
+      previewBody.innerHTML = `
+        <p class="preview-unavailable">
+          No inline preview is available for this file type (.${escapeHtml(ext || "?")}).<br />
+          Browsers can't render Word documents directly — use Download below to open it
+          in its own app.
+        </p>
+      `;
+    }
+  } catch (err) {
+    previewBody.innerHTML = `<p class="preview-unavailable">Error: ${escapeHtml(err.message)}</p>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function closePreview() {
+  previewOverlay.classList.add("hidden");
+  previewBody.innerHTML = "";
+  previewJobId = null;
 }
 
 async function updateStatus(jobId, newStatus, btn) {
@@ -293,6 +348,29 @@ adminKeyInput.addEventListener("keydown", (e) => {
 });
 refreshBtn.addEventListener("click", loadJobs);
 lockOutBtn.addEventListener("click", lockOut);
+
+previewCloseBtn.addEventListener("click", closePreview);
+previewOverlay.addEventListener("click", (e) => {
+  if (e.target === previewOverlay) closePreview();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !previewOverlay.classList.contains("hidden")) closePreview();
+});
+previewDownloadBtn.addEventListener("click", async () => {
+  if (!previewJobId) return;
+  previewDownloadBtn.disabled = true;
+  const originalText = previewDownloadBtn.textContent;
+  previewDownloadBtn.textContent = "Downloading...";
+  try {
+    const data = await callAdmin("getFileUrl", { job_id: previewJobId });
+    await downloadBlob(data.url, previewFileLabel);
+  } catch (err) {
+    log(`Error: ${err.message}`);
+  } finally {
+    previewDownloadBtn.disabled = false;
+    previewDownloadBtn.textContent = originalText;
+  }
+});
 
 filterRow.addEventListener("click", (e) => {
   const btn = e.target.closest(".filter-btn");

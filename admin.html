@@ -33,6 +33,12 @@
         </div>
       </div>
 
+      <p class="safety-note">
+        ⚠️ Downloaded files open normally in your computer's apps. For Word documents, leave
+        "Enable Editing" / "Enable Content" off unless you recognize and trust the file — that's
+        what keeps macros disabled on anything downloaded from the internet.
+      </p>
+
       <div class="filter-row" id="filterRow">
         <button type="button" class="filter-btn active" data-filter="active">Queued + Printing</button>
         <button type="button" class="filter-btn" data-filter="queued">Queued</button>
@@ -47,6 +53,20 @@
 
     <p id="adminDebug" class="muted"></p>
   </main>
+
+  <!-- ===================== File preview modal ===================== -->
+  <div id="previewOverlay" class="preview-overlay hidden">
+    <div class="preview-box">
+      <div class="preview-head">
+        <span id="previewFileName" class="preview-filename"></span>
+        <div class="preview-head-actions">
+          <button type="button" id="previewDownloadBtn" class="btn-small btn-download-modal">Download</button>
+          <button type="button" id="previewCloseBtn" class="btn-small btn-muted">Close</button>
+        </div>
+      </div>
+      <div id="previewBody" class="preview-body"></div>
+    </div>
+  </div>
 
   <footer>
     <p>© 2026 PrintQ — Staff Dashboard</p>
