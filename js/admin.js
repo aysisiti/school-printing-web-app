@@ -16,6 +16,9 @@ const previewFileName = document.getElementById("previewFileName");
 const previewBody = document.getElementById("previewBody");
 const previewDownloadBtn = document.getElementById("previewDownloadBtn");
 const previewCloseBtn = document.getElementById("previewCloseBtn");
+const pendingList = document.getElementById("pendingList");
+const pendingEmptyMsg = document.getElementById("pendingEmptyMsg");
+const pendingCount = document.getElementById("pendingCount");
 
 const SESSION_KEY = "printq_admin_key";
 const IMAGE_EXT = ["jpg", "jpeg", "png", "gif", "webp"];
@@ -63,7 +66,10 @@ function showLock() {
 
 function startAutoRefresh() {
   stopAutoRefresh();
-  autoRefreshTimer = setInterval(loadJobs, 20000);
+  autoRefreshTimer = setInterval(() => {
+    loadJobs();
+    loadPendingOrders();
+  }, 20000);
 }
 
 function stopAutoRefresh() {
@@ -84,6 +90,7 @@ async function unlock() {
     lockStatus.textContent = "";
     showDashboard();
     loadJobs();
+    loadPendingOrders();
   } catch (err) {
     sessionStorage.removeItem(SESSION_KEY);
     lockStatus.textContent = err.message === "Unauthorized" ? "Wrong admin key." : err.message;
@@ -244,6 +251,72 @@ async function loadJobs() {
   }
 }
 
+function renderPendingOrders(orders) {
+  pendingList.innerHTML = "";
+
+  if (!orders.length) {
+    pendingEmptyMsg.classList.remove("hidden");
+    pendingCount.classList.add("hidden");
+    return;
+  }
+  pendingEmptyMsg.classList.add("hidden");
+  pendingCount.textContent = String(orders.length);
+  pendingCount.classList.remove("hidden");
+
+  for (const order of orders) {
+    const itemCount = order.print_jobs?.[0]?.count ?? 0;
+    const card = document.createElement("div");
+    card.className = "pending-card";
+
+    const main = document.createElement("div");
+    main.className = "pending-card-main";
+    main.innerHTML = `
+      <div class="pending-order-code">${escapeHtml(order.order_code)} — ₱${Number(order.total_amount).toFixed(2)}</div>
+      <div class="pending-meta">${escapeHtml(order.student_name)} · ${escapeHtml(order.phone)} · ${itemCount} item(s) · ${escapeHtml(fulfillLine(order))}</div>
+    `;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn-simulate";
+    btn.textContent = "Simulate Payment Success";
+    btn.addEventListener("click", () => simulatePayment(order.order_code, btn));
+
+    card.appendChild(main);
+    card.appendChild(btn);
+    pendingList.appendChild(card);
+  }
+}
+
+async function loadPendingOrders() {
+  try {
+    const data = await callAdmin("listPendingOrders");
+    renderPendingOrders(data.orders || []);
+  } catch (err) {
+    log(`Error loading pending payments: ${err.message}`);
+  }
+}
+
+async function simulatePayment(orderCode, btn) {
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = "Simulating...";
+  try {
+    const data = await callAdmin("simulatePayment", { order_code: orderCode });
+    log(data.message || `Simulate sent for ${orderCode}`);
+    // Give Xendit's webhook a moment to land, then refresh both lists so
+    // the order drops out of Pending and its job appears in the queue.
+    setTimeout(() => {
+      loadPendingOrders();
+      loadJobs();
+    }, 1500);
+  } catch (err) {
+    log(`Error: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
 function fileExt(fileName) {
   const dot = (fileName || "").lastIndexOf(".");
   return dot === -1 ? "" : fileName.slice(dot + 1).toLowerCase();
@@ -346,7 +419,10 @@ unlockBtn.addEventListener("click", unlock);
 adminKeyInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") unlock();
 });
-refreshBtn.addEventListener("click", loadJobs);
+refreshBtn.addEventListener("click", () => {
+  loadJobs();
+  loadPendingOrders();
+});
 lockOutBtn.addEventListener("click", lockOut);
 
 previewCloseBtn.addEventListener("click", closePreview);
@@ -388,6 +464,7 @@ if (getKey()) {
       allJobs = data.jobs || [];
       showDashboard();
       renderJobs();
+      loadPendingOrders();
     })
     .catch(() => {
       sessionStorage.removeItem(SESSION_KEY);

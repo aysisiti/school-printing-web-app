@@ -168,6 +168,87 @@
   }
 }
 
+/* ========== Pending payments ========== */
+.pending-details {
+  border: 1px solid #e3e8f0;
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.pending-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pending-count {
+  display: inline-block;
+  background: #fff3cd;
+  color: #8a6d1d;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.pending-note {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0.6rem 0;
+  line-height: 1.5;
+}
+
+.pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.pending-card {
+  border: 1px solid #e3e8f0;
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.pending-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.pending-order-code {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.pending-meta {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.btn-simulate {
+  width: auto;
+  margin-top: 0;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+  background-color: #28a745;
+  flex-shrink: 0;
+}
+
+.btn-simulate:hover:not(:disabled) {
+  background-color: #1e7e34;
+}
+
 /* ========== Safety note ========== */
 .safety-note {
   background: #fff8e6;

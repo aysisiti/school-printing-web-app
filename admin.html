@@ -39,6 +39,20 @@
         what keeps macros disabled on anything downloaded from the internet.
       </p>
 
+      <!-- ===================== Pending payments (test mode) ===================== -->
+      <details id="pendingDetails" class="pending-details" open>
+        <summary>
+          Pending Payments <span id="pendingCount" class="pending-count hidden"></span>
+        </summary>
+        <p class="pending-note">
+          Test mode only: a real GCash/Maya app can't actually scan these orders' QR codes to pay
+          (they aren't real payment destinations). Use <strong>Simulate Payment Success</strong>
+          below to confirm one the same way Xendit's sandbox would.
+        </p>
+        <p id="pendingEmptyMsg" class="muted hidden">No orders waiting on payment.</p>
+        <div id="pendingList" class="pending-list"></div>
+      </details>
+
       <div class="filter-row" id="filterRow">
         <button type="button" class="filter-btn active" data-filter="active">Queued + Printing</button>
         <button type="button" class="filter-btn" data-filter="queued">Queued</button>
