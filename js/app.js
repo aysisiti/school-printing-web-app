@@ -63,6 +63,27 @@ const qrAmount = document.getElementById("qrAmount");
 const qrCanvas = document.getElementById("qrCanvas");
 const qrWaiting = document.getElementById("qrWaiting");
 const qrCloseBtn = document.getElementById("qrCloseBtn");
+const qrDownloadBtn = document.getElementById("qrDownloadBtn");
+const qrOpenAppBtn = document.getElementById("qrOpenAppBtn");
+const qrWalletPicker = document.getElementById("qrWalletPicker");
+const qrShareBtn = document.getElementById("qrShareBtn");
+const qrPickerMsg = document.getElementById("qrPickerMsg");
+const qrDesktopHint = document.getElementById("qrDesktopHint");
+
+// Custom-scheme app links only make sense on a phone/tablet. On a PC they
+// would do nothing (or show a confusing browser prompt), so desktop users
+// only get the Download button plus a hint.
+const IS_MOBILE =
+  /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const IS_ANDROID = /Android/i.test(navigator.userAgent);
+
+// gcash:// is documented by PayMongo's GCash deep-link guide. The Maya
+// scheme/package are best-effort (not officially documented).
+const WALLETS = {
+  gcash: { name: "GCash", scheme: "gcash", pkg: "com.globe.gcash.android" },
+  maya: { name: "Maya", scheme: "paymaya", pkg: "com.paymaya" },
+};
 
 let pollTimer = null;
 
@@ -333,6 +354,7 @@ async function showPaymentQr(orderCode, totalAmount, qrString) {
   qrWaiting.textContent = "Waiting for payment confirmation…";
   qrWaiting.className = "status-msg";
   qrOverlay.classList.remove("hidden");
+  resetQrActions();
 
   try {
     await QRCode.toCanvas(qrCanvas, qrString, { width: 220, margin: 1 });
@@ -498,3 +520,85 @@ function handleReturnFromPayment() {
 
 renderCart();
 handleReturnFromPayment();
+
+
+// ---------------------------------------------------------------
+// QR modal extras: download the QR, and (on phones) open an e-wallet
+// app without leaving/closing this page. We can't pass the QR into the
+// wallet app, so the flow is: Download QR -> Open app -> Scan QR ->
+// upload from gallery. Polling keeps running in the background and we
+// re-poll the moment the student comes back to this tab.
+// ---------------------------------------------------------------
+function resetQrActions() {
+  qrWalletPicker.classList.add("hidden");
+  qrPickerMsg.textContent = "";
+  qrOpenAppBtn.classList.toggle("hidden", !IS_MOBILE);
+  qrDesktopHint.classList.toggle("hidden", IS_MOBILE);
+}
+
+function canvasToBlob() {
+  return new Promise((resolve) => qrCanvas.toBlob(resolve, "image/png"));
+}
+
+qrDownloadBtn.addEventListener("click", async () => {
+  const blob = await canvasToBlob();
+  if (!blob) return;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${qrOrderCode.textContent || "payment"}-qr.png`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+qrOpenAppBtn.addEventListener("click", async () => {
+  qrWalletPicker.classList.toggle("hidden");
+  qrPickerMsg.textContent = "Tip: download the QR first, then in the app tap Scan QR and upload it from your gallery.";
+  // Offer the OS share sheet (lists every installed app) when supported.
+  try {
+    const blob = await canvasToBlob();
+    const file = new File([blob], "payment-qr.png", { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      qrShareBtn.classList.remove("hidden");
+    }
+  } catch { /* share not available */ }
+});
+
+qrWalletPicker.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-wallet]");
+  if (!btn) return;
+  const w = WALLETS[btn.dataset.wallet];
+  if (!w) return;
+
+  if (IS_ANDROID) {
+    const fallback = encodeURIComponent(`https://play.google.com/store/apps/details?id=${w.pkg}`);
+    window.location.href = `intent://#Intent;scheme=${w.scheme};package=${w.pkg};S.browser_fallback_url=${fallback};end`;
+  } else {
+    window.location.href = `${w.scheme}://`;
+  }
+
+  // If we're still visible shortly after, the app probably isn't installed.
+  setTimeout(() => {
+    if (document.visibilityState === "visible") {
+      qrPickerMsg.textContent = `Couldn't open ${w.name}. Make sure it's installed, or open it manually.`;
+    }
+  }, 2000);
+});
+
+qrShareBtn.addEventListener("click", async () => {
+  try {
+    const blob = await canvasToBlob();
+    const file = new File([blob], `${qrOrderCode.textContent || "payment"}-qr.png`, { type: "image/png" });
+    await navigator.share({ files: [file], title: "Payment QR" });
+  } catch { /* user cancelled or unsupported */ }
+});
+
+// Coming back from a wallet app: check payment right away instead of
+// waiting for the next 3-second tick (browsers throttle background timers).
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && pollTimer && qrOrderCode.textContent) {
+    pollPaymentStatus(qrOrderCode.textContent);
+  }
+});

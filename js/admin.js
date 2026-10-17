@@ -88,6 +88,7 @@ async function unlock() {
   try {
     await callAdmin("listJobs");
     lockStatus.textContent = "";
+    adminKeyInput.value = ""; // don't leave the key sitting in the field
     showDashboard();
     loadJobs();
     loadPendingOrders();
@@ -100,6 +101,8 @@ async function unlock() {
 
 function lockOut() {
   sessionStorage.removeItem(SESSION_KEY);
+  adminKeyInput.value = "";
+  lockStatus.textContent = "";
   showLock();
 }
 

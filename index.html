@@ -134,8 +134,24 @@
       <div id="qrCanvasWrap" class="qr-canvas-wrap">
         <canvas id="qrCanvas"></canvas>
       </div>
+      <div class="qr-actions">
+        <button type="button" id="qrDownloadBtn" class="btn-qr">Download QR</button>
+        <button type="button" id="qrOpenAppBtn" class="btn-qr btn-qr-app hidden">Open App</button>
+      </div>
+      <div id="qrWalletPicker" class="qr-wallet-picker hidden">
+        <p class="qr-picker-title">Choose your e-wallet</p>
+        <button type="button" class="btn-wallet" data-wallet="gcash">GCash</button>
+        <button type="button" class="btn-wallet" data-wallet="maya">Maya</button>
+        <button type="button" class="btn-wallet btn-wallet-more hidden" id="qrShareBtn">More apps…</button>
+        <p id="qrPickerMsg" class="qr-picker-msg"></p>
+      </div>
+      <p id="qrDesktopHint" class="qr-desktop-hint hidden">
+        On a computer? Download the QR, then open your e-wallet on your phone and upload it
+        (Scan QR → upload from gallery), or open this page on your phone.
+      </p>
       <p class="qr-instructions">
-        Open GCash, Maya, or any QR Ph-enabled app, tap Scan QR, and scan the code above.
+        Open GCash, Maya, or any QR Ph-enabled app, tap Scan QR, and scan the code above
+        (or download it and upload it from your gallery).
         This is Xendit's <strong>test mode</strong> — no real money moves.
       </p>
       <p id="qrWaiting" class="status-msg">Waiting for payment confirmation…</p>
