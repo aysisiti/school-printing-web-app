@@ -264,7 +264,7 @@ function renderPendingOrders(orders) {
   pendingCount.classList.remove("hidden");
 
   for (const order of orders) {
-    const itemCount = order.print_jobs?.[0]?.count ?? 0;
+    const itemCount = order.print_jobs?.length ?? 0;
     const card = document.createElement("div");
     card.className = "pending-card";
 
