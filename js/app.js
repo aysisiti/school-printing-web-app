@@ -81,7 +81,10 @@ const IS_ANDROID = /Android/i.test(navigator.userAgent);
 // gcash:// is documented by PayMongo's GCash deep-link guide. The Maya
 // scheme/package are best-effort (not officially documented).
 const WALLETS = {
-  gcash: { name: "GCash", scheme: "gcash", pkg: "com.globe.gcash.android" },
+  // GCash's app doesn't answer a bare gcash:// intent on Android (that sent
+  // testers to the Play Store even with the app installed), so on Android we
+  // launch it by package name instead. Maya's paymaya:// scheme works.
+  gcash: { name: "GCash", scheme: "gcash", pkg: "com.globe.gcash.android", launchByPackage: true },
   maya: { name: "Maya", scheme: "paymaya", pkg: "com.paymaya" },
 };
 
@@ -574,7 +577,9 @@ qrWalletPicker.addEventListener("click", (e) => {
 
   if (IS_ANDROID) {
     const fallback = encodeURIComponent(`https://play.google.com/store/apps/details?id=${w.pkg}`);
-    window.location.href = `intent://#Intent;scheme=${w.scheme};package=${w.pkg};S.browser_fallback_url=${fallback};end`;
+    window.location.href = w.launchByPackage
+      ? `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${w.pkg};S.browser_fallback_url=${fallback};end`
+      : `intent://#Intent;scheme=${w.scheme};package=${w.pkg};S.browser_fallback_url=${fallback};end`;
   } else {
     window.location.href = `${w.scheme}://`;
   }
