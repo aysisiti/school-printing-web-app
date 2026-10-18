@@ -576,9 +576,12 @@ qrWalletPicker.addEventListener("click", (e) => {
   if (!w) return;
 
   if (IS_ANDROID) {
+    // No Play Store fallback for GCash: Chrome sends people to the store
+    // whenever the intent can't be matched, even if the app IS installed,
+    // which is misleading. We show a "open it manually" message instead.
     const fallback = encodeURIComponent(`https://play.google.com/store/apps/details?id=${w.pkg}`);
     window.location.href = w.launchByPackage
-      ? `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${w.pkg};S.browser_fallback_url=${fallback};end`
+      ? `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${w.pkg};end`
       : `intent://#Intent;scheme=${w.scheme};package=${w.pkg};S.browser_fallback_url=${fallback};end`;
   } else {
     window.location.href = `${w.scheme}://`;
@@ -587,7 +590,7 @@ qrWalletPicker.addEventListener("click", (e) => {
   // If we're still visible shortly after, the app probably isn't installed.
   setTimeout(() => {
     if (document.visibilityState === "visible") {
-      qrPickerMsg.textContent = `Couldn't open ${w.name}. Make sure it's installed, or open it manually.`;
+      qrPickerMsg.textContent = `Couldn't open ${w.name} automatically. Open the ${w.name} app yourself, tap Scan QR, and upload the QR you downloaded.`;
     }
   }, 2000);
 });
