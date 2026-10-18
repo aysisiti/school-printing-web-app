@@ -68,7 +68,6 @@ const qrOpenAppBtn = document.getElementById("qrOpenAppBtn");
 const qrWalletPicker = document.getElementById("qrWalletPicker");
 const qrShareBtn = document.getElementById("qrShareBtn");
 const qrPickerMsg = document.getElementById("qrPickerMsg");
-const qrDesktopHint = document.getElementById("qrDesktopHint");
 
 // Custom-scheme app links only make sense on a phone/tablet. On a PC they
 // would do nothing (or show a confusing browser prompt), so desktop users
@@ -536,7 +535,6 @@ function resetQrActions() {
   qrWalletPicker.classList.add("hidden");
   qrPickerMsg.textContent = "";
   qrOpenAppBtn.classList.toggle("hidden", !IS_MOBILE);
-  qrDesktopHint.classList.toggle("hidden", IS_MOBILE);
 }
 
 function canvasToBlob() {
@@ -558,7 +556,6 @@ qrDownloadBtn.addEventListener("click", async () => {
 
 qrOpenAppBtn.addEventListener("click", async () => {
   qrWalletPicker.classList.toggle("hidden");
-  qrPickerMsg.textContent = "Tip: download the QR first, then in the app tap Scan QR and upload it from your gallery.";
   // Offer the OS share sheet (lists every installed app) when supported.
   try {
     const blob = await canvasToBlob();
@@ -590,7 +587,7 @@ qrWalletPicker.addEventListener("click", (e) => {
   // If we're still visible shortly after, the app probably isn't installed.
   setTimeout(() => {
     if (document.visibilityState === "visible") {
-      qrPickerMsg.textContent = `Couldn't open ${w.name} automatically. Open the ${w.name} app yourself, tap Scan QR, and upload the QR you downloaded.`;
+      qrPickerMsg.textContent = `Couldn't open ${w.name}. Open it manually and upload the downloaded QR.`;
     }
   }, 2000);
 });
