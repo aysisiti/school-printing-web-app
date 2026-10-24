@@ -24,38 +24,48 @@
     </section>
 
     <!-- ===================== Dashboard ===================== -->
-    <section id="dashboard-section" class="form-section wide hidden">
-      <div class="dash-head">
-        <h2>Print Queue</h2>
+    <div id="dashboard-section" class="dashboard-wrap hidden">
+      <div class="dash-toolbar">
+        <p class="safety-note">⚠️ Keep “Enable Editing” off for Word files you don't recognize.</p>
         <div class="dash-head-actions">
           <button type="button" id="refreshBtn" class="btn-small">Refresh</button>
           <button type="button" id="lockOutBtn" class="btn-small btn-muted">Lock</button>
         </div>
       </div>
 
-      <p class="safety-note">⚠️ Keep “Enable Editing” off for Word files you don't recognize.</p>
+      <div class="dash-grid">
+        <!-- ===================== Print queue card ===================== -->
+        <section id="queueCard" class="form-section dash-card">
+          <div class="card-title-row">
+            <h2>Print Queue</h2>
+          </div>
 
-      <!-- ===================== Pending payments (test mode) ===================== -->
-      <details id="pendingDetails" class="pending-details" open>
-        <summary>
-          Pending Payments <span id="pendingCount" class="pending-count hidden"></span>
-        </summary>
-        <p class="pending-note">Test mode: use Simulate Payment Success to confirm an order.</p>
-        <p id="pendingEmptyMsg" class="muted hidden">No orders waiting on payment.</p>
-        <div id="pendingList" class="pending-list"></div>
-      </details>
+          <div class="filter-row" id="filterRow">
+            <button type="button" class="filter-btn active" data-filter="active">Queued + Printing</button>
+            <button type="button" class="filter-btn" data-filter="queued">Queued</button>
+            <button type="button" class="filter-btn" data-filter="printing">Printing</button>
+            <button type="button" class="filter-btn" data-filter="done">Done</button>
+            <button type="button" class="filter-btn" data-filter="all">All</button>
+          </div>
 
-      <div class="filter-row" id="filterRow">
-        <button type="button" class="filter-btn active" data-filter="active">Queued + Printing</button>
-        <button type="button" class="filter-btn" data-filter="queued">Queued</button>
-        <button type="button" class="filter-btn" data-filter="printing">Printing</button>
-        <button type="button" class="filter-btn" data-filter="done">Done</button>
-        <button type="button" class="filter-btn" data-filter="all">All</button>
+          <p id="jobsEmptyMsg" class="muted hidden">No print jobs in this view.</p>
+          <div id="jobsList" class="jobs-list"></div>
+          <button type="button" id="jobsToggleBtn" class="btn-toggle hidden">Show more</button>
+        </section>
+
+        <!-- ===================== Payment simulation card ===================== -->
+        <section id="paymentCard" class="form-section dash-card">
+          <div class="card-title-row">
+            <h2>Payment Simulation</h2>
+            <span id="pendingCount" class="pending-count hidden"></span>
+          </div>
+          <p class="pending-note">Test mode: confirm an unpaid order below.</p>
+          <p id="pendingEmptyMsg" class="muted hidden">No orders waiting on payment.</p>
+          <div id="pendingList" class="pending-list"></div>
+          <button type="button" id="pendingToggleBtn" class="btn-toggle hidden">Show more</button>
+        </section>
       </div>
-
-      <p id="jobsEmptyMsg" class="muted hidden">No print jobs in this view.</p>
-      <div id="jobsList" class="jobs-list"></div>
-    </section>
+    </div>
 
     <p id="adminDebug" class="muted"></p>
   </main>

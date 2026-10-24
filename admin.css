@@ -1,17 +1,72 @@
 /* ========== Admin dashboard extras ========== */
-.form-section.wide {
-  max-width: 780px;
+/* Dashboard layout: toolbar on top, then two separate cards — stacked on
+   phones, side by side on wider screens. */
+.dashboard-wrap {
+  width: 100%;
+  max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.dash-head {
+/* Must win over display:flex above (equal specificity, declared later than
+   .hidden in styles.css). */
+.dashboard-wrap.hidden {
+  display: none;
+}
+
+.dash-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.8rem;
+  gap: 0.8rem;
+  flex-wrap: wrap;
 }
 
-.dash-head h2 {
+.dash-toolbar .safety-note {
   margin: 0;
+  flex: 1 1 240px;
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .dash-grid {
+    grid-template-columns: 3fr 2fr;
+  }
+}
+
+.dash-card {
+  max-width: none;
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.card-title-row h2 {
+  margin: 0;
+}
+
+.btn-toggle {
+  background-color: #e9eef5;
+  color: #333;
+  margin-top: 0.9rem;
+}
+
+.btn-toggle:hover:not(:disabled) {
+  background-color: #dbe4f0;
 }
 
 .dash-head-actions {
@@ -169,22 +224,6 @@
 }
 
 /* ========== Pending payments ========== */
-.pending-details {
-  border: 1px solid #e3e8f0;
-  border-radius: 10px;
-  padding: 0.7rem 0.9rem;
-  margin-bottom: 1rem;
-}
-
-.pending-details summary {
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.95rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 .pending-count {
   display: inline-block;
   background: #fff3cd;

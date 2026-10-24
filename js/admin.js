@@ -19,6 +19,23 @@ const previewCloseBtn = document.getElementById("previewCloseBtn");
 const pendingList = document.getElementById("pendingList");
 const pendingEmptyMsg = document.getElementById("pendingEmptyMsg");
 const pendingCount = document.getElementById("pendingCount");
+const jobsToggleBtn = document.getElementById("jobsToggleBtn");
+const pendingToggleBtn = document.getElementById("pendingToggleBtn");
+
+// Lists longer than this collapse behind a "Show more" button.
+const LIST_LIMIT = 5;
+let jobsExpanded = false;
+let pendingExpanded = false;
+let pendingOrders = [];
+
+function updateToggle(btn, total, expanded) {
+  if (total <= LIST_LIMIT) {
+    btn.classList.add("hidden");
+    return;
+  }
+  btn.classList.remove("hidden");
+  btn.textContent = expanded ? "Show less" : `Show more (${total - LIST_LIMIT} more)`;
+}
 
 const SESSION_KEY = "printq_admin_key";
 const IMAGE_EXT = ["jpg", "jpeg", "png", "gif", "webp"];
@@ -137,11 +154,14 @@ function renderJobs() {
   jobsList.innerHTML = "";
   if (jobs.length === 0) {
     jobsEmptyMsg.classList.remove("hidden");
+    jobsToggleBtn.classList.add("hidden");
     return;
   }
   jobsEmptyMsg.classList.add("hidden");
+  updateToggle(jobsToggleBtn, jobs.length, jobsExpanded);
+  const visibleJobs = jobsExpanded ? jobs : jobs.slice(0, LIST_LIMIT);
 
-  for (const job of jobs) {
+  for (const job of visibleJobs) {
     const order = job.orders || {};
     const card = document.createElement("div");
     card.className = "job-card";
@@ -255,18 +275,22 @@ async function loadJobs() {
 }
 
 function renderPendingOrders(orders) {
+  pendingOrders = orders;
   pendingList.innerHTML = "";
 
   if (!orders.length) {
     pendingEmptyMsg.classList.remove("hidden");
     pendingCount.classList.add("hidden");
+    pendingToggleBtn.classList.add("hidden");
     return;
   }
   pendingEmptyMsg.classList.add("hidden");
   pendingCount.textContent = String(orders.length);
   pendingCount.classList.remove("hidden");
+  updateToggle(pendingToggleBtn, orders.length, pendingExpanded);
+  const visibleOrders = pendingExpanded ? orders : orders.slice(0, LIST_LIMIT);
 
-  for (const order of orders) {
+  for (const order of visibleOrders) {
     const itemCount = order.print_jobs?.length ?? 0;
     const card = document.createElement("div");
     card.className = "pending-card";
@@ -457,7 +481,18 @@ filterRow.addEventListener("click", (e) => {
   document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
   btn.classList.add("active");
   currentFilter = btn.dataset.filter;
+  jobsExpanded = false;
   renderJobs();
+});
+
+jobsToggleBtn.addEventListener("click", () => {
+  jobsExpanded = !jobsExpanded;
+  renderJobs();
+});
+
+pendingToggleBtn.addEventListener("click", () => {
+  pendingExpanded = !pendingExpanded;
+  renderPendingOrders(pendingOrders);
 });
 
 // Auto-login if a key is already stored for this tab session
