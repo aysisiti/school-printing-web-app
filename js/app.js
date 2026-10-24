@@ -68,6 +68,11 @@ const qrOpenAppBtn = document.getElementById("qrOpenAppBtn");
 const qrWalletPicker = document.getElementById("qrWalletPicker");
 const qrShareBtn = document.getElementById("qrShareBtn");
 const qrPickerMsg = document.getElementById("qrPickerMsg");
+const qrTitle = document.getElementById("qrTitle");
+const qrMethodBadge = document.getElementById("qrMethodBadge");
+const qrOnlineBlock = document.getElementById("qrOnlineBlock");
+const qrCashBtn = document.getElementById("qrCashBtn");
+const qrCashMsg = document.getElementById("qrCashMsg");
 
 // Custom-scheme app links only make sense on a phone/tablet. On a PC they
 // would do nothing (or show a confusing browser prompt), so desktop users
@@ -531,7 +536,45 @@ handleReturnFromPayment();
 // upload from gallery. Polling keeps running in the background and we
 // re-poll the moment the student comes back to this tab.
 // ---------------------------------------------------------------
+function setQrMode(cash) {
+  qrOnlineBlock.classList.toggle("hidden", cash);
+  qrCashMsg.classList.toggle("hidden", !cash);
+  qrTitle.textContent = cash ? "Pay at the Counter" : "Scan to Pay";
+  qrMethodBadge.textContent = cash ? "Cash payment" : "Online payment";
+  qrMethodBadge.className = "badge-method " + (cash ? "badge-cash" : "badge-online");
+  qrWaiting.textContent = cash
+    ? "Waiting for staff to confirm payment…"
+    : "Waiting for payment confirmation…";
+  qrWaiting.className = "status-msg";
+}
+
+qrCashBtn.addEventListener("click", async () => {
+  const code = qrOrderCode.textContent;
+  if (!code) return;
+  qrCashBtn.disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/setPaymentMethod`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: "Bearer " + SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ order_code: code, payment_method: "cash" }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Request failed");
+    setQrMode(true);
+  } catch (err) {
+    qrPickerMsg.textContent = `Couldn't switch to cash: ${err.message}`;
+    qrWalletPicker.classList.remove("hidden");
+  } finally {
+    qrCashBtn.disabled = false;
+  }
+});
+
 function resetQrActions() {
+  setQrMode(false);
   qrWalletPicker.classList.add("hidden");
   qrPickerMsg.textContent = "";
   qrOpenAppBtn.classList.toggle("hidden", !IS_MOBILE);

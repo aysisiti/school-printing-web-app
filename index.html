@@ -128,9 +128,11 @@
   <!-- ===================== QR payment modal ===================== -->
   <div id="qrOverlay" class="qr-overlay hidden">
     <div class="qr-box">
-      <h2>Scan to Pay</h2>
+      <h2 id="qrTitle">Scan to Pay</h2>
       <p id="qrOrderCode" class="qr-order-code"></p>
       <p id="qrAmount" class="qr-amount"></p>
+      <span id="qrMethodBadge" class="badge-method badge-online">Online payment</span>
+      <div id="qrOnlineBlock">
       <div id="qrCanvasWrap" class="qr-canvas-wrap">
         <canvas id="qrCanvas"></canvas>
       </div>
@@ -146,6 +148,9 @@
         <p id="qrPickerMsg" class="qr-picker-msg"></p>
       </div>
       <p class="qr-instructions">Scan with GCash, Maya, or any QR Ph app.</p>
+      <button type="button" id="qrCashBtn" class="btn-qr btn-cash">Pay cash at the counter instead</button>
+      </div>
+      <p id="qrCashMsg" class="qr-instructions hidden">Pay the amount above at the counter and give your order code.</p>
       <p id="qrWaiting" class="status-msg">Waiting for payment confirmation…</p>
       <button type="button" id="qrCloseBtn" class="btn-muted">Cancel</button>
     </div>

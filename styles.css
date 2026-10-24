@@ -481,3 +481,16 @@ footer {
 .btn-wallet.hidden {
   display: none;
 }
+
+.badge-method {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  margin-bottom: 0.4rem;
+}
+.badge-online { background: #e0efff; color: #0b5ed7; }
+.badge-cash { background: #e3f6e8; color: #1e7e34; }
+.btn-cash { background-color: #1e7e34; margin-top: 0.6rem; }
+#qrOnlineBlock.hidden, #qrCashMsg.hidden { display: none; }

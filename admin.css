@@ -392,3 +392,15 @@
   padding: 2rem 1rem;
   line-height: 1.6;
 }
+
+.badge-method {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  margin-right: 0.3rem;
+  vertical-align: middle;
+}
+.badge-online { background: #e0efff; color: #0b5ed7; }
+.badge-cash { background: #e3f6e8; color: #1e7e34; }
