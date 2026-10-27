@@ -172,7 +172,7 @@ function renderJobs() {
     const left = document.createElement("div");
     left.innerHTML = `
       <div class="job-student">${escapeHtml(order.student_name || "Unknown")} · ${escapeHtml(order.phone || "")}</div>
-      <div class="job-order-code">${methodBadge(order.payment_method)} ${escapeHtml(order.order_code || "")} · ${escapeHtml(job.file_name || "")}</div>
+      <div class="job-order-code">${escapeHtml(order.order_code || "")} · ${escapeHtml(job.file_name || "")}</div>
     `;
 
     const right = document.createElement("div");
@@ -298,20 +298,15 @@ function renderPendingOrders(orders) {
     const main = document.createElement("div");
     main.className = "pending-card-main";
     main.innerHTML = `
-      <div class="pending-order-code">${methodBadge(order.payment_method)} ${escapeHtml(order.order_code)} — ₱${Number(order.total_amount).toFixed(2)}</div>
+      <div class="pending-order-code">${escapeHtml(order.order_code)} — ₱${Number(order.total_amount).toFixed(2)}</div>
       <div class="pending-meta">${escapeHtml(order.student_name)} · ${escapeHtml(order.phone)} · ${itemCount} item(s) · ${escapeHtml(fulfillLine(order))}</div>
     `;
 
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "btn-simulate";
-    if (order.payment_method === "cash") {
-      btn.textContent = "Confirm Cash Received";
-      btn.addEventListener("click", () => confirmCash(order.order_code, btn));
-    } else {
-      btn.textContent = "Simulate Payment Success";
-      btn.addEventListener("click", () => simulatePayment(order.order_code, btn));
-    }
+    btn.textContent = "Confirm Cash Received";
+    btn.addEventListener("click", () => confirmCash(order.order_code, btn));
 
     card.appendChild(main);
     card.appendChild(btn);
@@ -328,12 +323,6 @@ async function loadPendingOrders() {
   }
 }
 
-function methodBadge(method) {
-  return method === "cash"
-    ? '<span class="badge-method badge-cash">Cash</span>'
-    : '<span class="badge-method badge-online">Online</span>';
-}
-
 async function confirmCash(orderCode, btn) {
   btn.disabled = true;
   const originalText = btn.textContent;
@@ -343,27 +332,6 @@ async function confirmCash(orderCode, btn) {
     log(data.message || `Cash confirmed for ${orderCode}`);
     loadPendingOrders();
     loadJobs();
-  } catch (err) {
-    log(`Error: ${err.message}`);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = originalText;
-  }
-}
-
-async function simulatePayment(orderCode, btn) {
-  btn.disabled = true;
-  const originalText = btn.textContent;
-  btn.textContent = "Simulating...";
-  try {
-    const data = await callAdmin("simulatePayment", { order_code: orderCode });
-    log(data.message || `Simulate sent for ${orderCode}`);
-    // Give Xendit's webhook a moment to land, then refresh both lists so
-    // the order drops out of Pending and its job appears in the queue.
-    setTimeout(() => {
-      loadPendingOrders();
-      loadJobs();
-    }, 1500);
   } catch (err) {
     log(`Error: ${err.message}`);
   } finally {

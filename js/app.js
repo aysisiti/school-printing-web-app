@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import QRCode from "https://esm.sh/qrcode@1.5.3";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, API_BASE, STORAGE_BUCKET } from "./config.js";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -60,37 +59,8 @@ const returnBanner = document.getElementById("returnBanner");
 const qrOverlay = document.getElementById("qrOverlay");
 const qrOrderCode = document.getElementById("qrOrderCode");
 const qrAmount = document.getElementById("qrAmount");
-const qrCanvas = document.getElementById("qrCanvas");
 const qrWaiting = document.getElementById("qrWaiting");
 const qrCloseBtn = document.getElementById("qrCloseBtn");
-const qrDownloadBtn = document.getElementById("qrDownloadBtn");
-const qrOpenAppBtn = document.getElementById("qrOpenAppBtn");
-const qrWalletPicker = document.getElementById("qrWalletPicker");
-const qrShareBtn = document.getElementById("qrShareBtn");
-const qrPickerMsg = document.getElementById("qrPickerMsg");
-const qrTitle = document.getElementById("qrTitle");
-const qrMethodBadge = document.getElementById("qrMethodBadge");
-const qrOnlineBlock = document.getElementById("qrOnlineBlock");
-const qrCashBtn = document.getElementById("qrCashBtn");
-const qrCashMsg = document.getElementById("qrCashMsg");
-
-// Custom-scheme app links only make sense on a phone/tablet. On a PC they
-// would do nothing (or show a confusing browser prompt), so desktop users
-// only get the Download button plus a hint.
-const IS_MOBILE =
-  /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-const IS_ANDROID = /Android/i.test(navigator.userAgent);
-
-// gcash:// is documented by PayMongo's GCash deep-link guide. The Maya
-// scheme/package are best-effort (not officially documented).
-const WALLETS = {
-  // GCash's app doesn't answer a bare gcash:// intent on Android (that sent
-  // testers to the Play Store even with the app installed), so on Android we
-  // launch it by package name instead. Maya's paymaya:// scheme works.
-  gcash: { name: "GCash", scheme: "gcash", pkg: "com.globe.gcash.android", launchByPackage: true },
-  maya: { name: "Maya", scheme: "paymaya", pkg: "com.paymaya" },
-};
 
 let pollTimer = null;
 
@@ -337,12 +307,11 @@ checkoutBtn.addEventListener("click", async () => {
     if (!res.ok) {
       throw new Error(data.error || "Failed to create checkout.");
     }
-    if (!data.qr_string) {
-      throw new Error("No QR code returned.");
+    if (!data.order_code) {
+      throw new Error("No order code returned.");
     }
 
-    setCheckoutStatus(`Order ${data.order_code} created.`, "ok");
-    await showPaymentQr(data.order_code, data.total_amount, data.qr_string);
+    showCashOrder(data.order_code, data.total_amount);
   } catch (err) {
     setCheckoutStatus(err.message || "Something went wrong.", "err");
   } finally {
@@ -351,27 +320,23 @@ checkoutBtn.addEventListener("click", async () => {
 });
 
 // ---------------------------------------------------------------
-// QR payment modal: render the Xendit QR Ph string as a scannable
-// QR code, then poll getOrderStatus every few seconds until the
-// webhook flips payment_stat away from "pending".
+// Pay-at-the-counter modal: show the order code and amount, then poll
+// getOrderStatus until staff confirm the cash payment.
 // ---------------------------------------------------------------
-async function showPaymentQr(orderCode, totalAmount, qrString) {
+function showCashOrder(orderCode, totalAmount) {
   qrOrderCode.textContent = orderCode;
   qrAmount.textContent = `Amount: ₱${Number(totalAmount).toFixed(2)}`;
-  qrWaiting.textContent = "Waiting for payment confirmation…";
+  qrWaiting.textContent = "Waiting for staff to confirm payment…";
   qrWaiting.className = "status-msg";
   qrOverlay.classList.remove("hidden");
-  resetQrActions();
 
-  try {
-    await QRCode.toCanvas(qrCanvas, qrString, { width: 220, margin: 1 });
-  } catch (err) {
-    log(`QR render error: ${err.message}`);
-  }
+  // The order exists now, so clear the cart to avoid a duplicate order.
+  statusPrintId.value = orderCode;
+  resetCartAfterOrder();
 
   stopPolling();
   pollTimer = setInterval(() => pollPaymentStatus(orderCode), 3000);
-  pollPaymentStatus(orderCode); // check immediately too
+  pollPaymentStatus(orderCode);
 }
 
 function stopPolling() {
@@ -397,17 +362,15 @@ async function pollPaymentStatus(orderCode) {
 
     if (data.payment_stat === "confirmed") {
       stopPolling();
-      qrWaiting.textContent = "Payment confirmed! Closing in a moment…";
+      qrWaiting.textContent = "Payment received! Closing in a moment…";
       qrWaiting.className = "status-msg ok";
       setTimeout(() => {
         qrOverlay.classList.add("hidden");
-        statusPrintId.value = orderCode;
         checkOrderStatus(orderCode);
-        resetCartAfterOrder();
       }, 1500);
     } else if (data.payment_stat === "failed") {
       stopPolling();
-      qrWaiting.textContent = "Payment failed. You can close this and try again.";
+      qrWaiting.textContent = "This order was not paid. You can close this and place a new order.";
       qrWaiting.className = "status-msg err";
     }
     // "pending" — keep polling silently
@@ -529,122 +492,8 @@ renderCart();
 handleReturnFromPayment();
 
 
-// ---------------------------------------------------------------
-// QR modal extras: download the QR, and (on phones) open an e-wallet
-// app without leaving/closing this page. We can't pass the QR into the
-// wallet app, so the flow is: Download QR -> Open app -> Scan QR ->
-// upload from gallery. Polling keeps running in the background and we
-// re-poll the moment the student comes back to this tab.
-// ---------------------------------------------------------------
-function setQrMode(cash) {
-  qrOnlineBlock.classList.toggle("hidden", cash);
-  qrCashMsg.classList.toggle("hidden", !cash);
-  qrTitle.textContent = cash ? "Pay at the Counter" : "Scan to Pay";
-  qrMethodBadge.textContent = cash ? "Cash payment" : "Online payment";
-  qrMethodBadge.className = "badge-method " + (cash ? "badge-cash" : "badge-online");
-  qrWaiting.textContent = cash
-    ? "Waiting for staff to confirm payment…"
-    : "Waiting for payment confirmation…";
-  qrWaiting.className = "status-msg";
-}
-
-qrCashBtn.addEventListener("click", async () => {
-  const code = qrOrderCode.textContent;
-  if (!code) return;
-  qrCashBtn.disabled = true;
-  try {
-    const res = await fetch(`${API_BASE}/setPaymentMethod`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: "Bearer " + SUPABASE_ANON_KEY,
-      },
-      body: JSON.stringify({ order_code: code, payment_method: "cash" }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Request failed");
-    setQrMode(true);
-  } catch (err) {
-    qrPickerMsg.textContent = `Couldn't switch to cash: ${err.message}`;
-    qrWalletPicker.classList.remove("hidden");
-  } finally {
-    qrCashBtn.disabled = false;
-  }
-});
-
-function resetQrActions() {
-  setQrMode(false);
-  qrWalletPicker.classList.add("hidden");
-  qrPickerMsg.textContent = "";
-  qrOpenAppBtn.classList.toggle("hidden", !IS_MOBILE);
-}
-
-function canvasToBlob() {
-  return new Promise((resolve) => qrCanvas.toBlob(resolve, "image/png"));
-}
-
-qrDownloadBtn.addEventListener("click", async () => {
-  const blob = await canvasToBlob();
-  if (!blob) return;
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${qrOrderCode.textContent || "payment"}-qr.png`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-});
-
-qrOpenAppBtn.addEventListener("click", async () => {
-  qrWalletPicker.classList.toggle("hidden");
-  // Offer the OS share sheet (lists every installed app) when supported.
-  try {
-    const blob = await canvasToBlob();
-    const file = new File([blob], "payment-qr.png", { type: "image/png" });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      qrShareBtn.classList.remove("hidden");
-    }
-  } catch { /* share not available */ }
-});
-
-qrWalletPicker.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-wallet]");
-  if (!btn) return;
-  const w = WALLETS[btn.dataset.wallet];
-  if (!w) return;
-
-  if (IS_ANDROID) {
-    // No Play Store fallback for GCash: Chrome sends people to the store
-    // whenever the intent can't be matched, even if the app IS installed,
-    // which is misleading. We show a "open it manually" message instead.
-    const fallback = encodeURIComponent(`https://play.google.com/store/apps/details?id=${w.pkg}`);
-    window.location.href = w.launchByPackage
-      ? `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${w.pkg};end`
-      : `intent://#Intent;scheme=${w.scheme};package=${w.pkg};S.browser_fallback_url=${fallback};end`;
-  } else {
-    window.location.href = `${w.scheme}://`;
-  }
-
-  // If we're still visible shortly after, the app probably isn't installed.
-  setTimeout(() => {
-    if (document.visibilityState === "visible") {
-      qrPickerMsg.textContent = `Couldn't open ${w.name}. Open it manually and upload the downloaded QR.`;
-    }
-  }, 2000);
-});
-
-qrShareBtn.addEventListener("click", async () => {
-  try {
-    const blob = await canvasToBlob();
-    const file = new File([blob], `${qrOrderCode.textContent || "payment"}-qr.png`, { type: "image/png" });
-    await navigator.share({ files: [file], title: "Payment QR" });
-  } catch { /* user cancelled or unsupported */ }
-});
-
-// Coming back from a wallet app: check payment right away instead of
-// waiting for the next 3-second tick (browsers throttle background timers).
+// Coming back to the tab: re-check right away instead of waiting for the
+// next 3-second tick (browsers throttle background timers).
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && pollTimer && qrOrderCode.textContent) {
     pollPaymentStatus(qrOrderCode.textContent);
